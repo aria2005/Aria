@@ -103,6 +103,22 @@ _YEAR = r"(?<!\d)(?:19|20)\d{2}(?!\d)"
 NON_ASCII_DATE_RANGE = re.compile(
     rf"{_YEAR}[^\S\n]*[{NON_ASCII_DASHES}]|[{NON_ASCII_DASHES}][^\S\n]*{_YEAR}"
 )
+# The number tokens touching the dash on either side. A range whose two ends are
+# both plain numbers is a date only when both are years: `EUR 1500-2000` and
+# `2000-5000 requests/s` are quantities that happen to contain a year-shaped
+# number, and the guide tells users to keep `--` in exactly those.
+_NUMBER_BEFORE = re.compile(r"(\d+(?:[.,]\d+)*[kKmM%]?)[^\S\n]*$")
+_NUMBER_AFTER = re.compile(r"^[^\S\n]*(\d+(?:[.,]\d+)*[kKmM%]?)")
+_BARE_YEAR = re.compile(r"(?:19|20)\d{2}$")
+
+
+def _quantity_range(line, dash_index):
+    """True when both sides of the dash are numbers and not both years."""
+    before = _NUMBER_BEFORE.search(line[:dash_index])
+    after = _NUMBER_AFTER.search(line[dash_index + 1 :])
+    if not before or not after:
+        return False
+    return not (_BARE_YEAR.fullmatch(before.group(1)) and _BARE_YEAR.fullmatch(after.group(1)))
 
 
 def find_non_ascii_date_ranges(text):
@@ -112,15 +128,19 @@ def find_non_ascii_date_ranges(text):
     maps U+2013 back to `-` so `--contains "2016-2024"` can match what the
     template renders, which is exactly why `--contains` cannot see this defect.
     A year on either side of the dash is enough ("Mar 2016 - Jul 2016",
-    "2016 - Present"), so the check is locale-agnostic; a numeric range with
-    no year ("EUR 600k-1M") is not a date and is left alone.
+    "2016 - Present"), so the check is locale-agnostic. A range whose two ends
+    are both plain numbers is a date only when both are years: "EUR 600k-1M",
+    "EUR 1500-2000" and "2000-5000 requests/s" are quantities and are left alone.
     """
     hits = []
     for match in NON_ASCII_DATE_RANGE.finditer(text):
         dash = next(c for c in match.group(0) if c in NON_ASCII_DASHES)
         line_start = text.rfind("\n", 0, match.start()) + 1
         line_end = text.find("\n", match.end())
-        line = text[line_start : line_end if line_end != -1 else len(text)]
+        line_end = line_end if line_end != -1 else len(text)
+        line = text[line_start:line_end]
+        if _quantity_range(line, match.start() + match.group(0).index(dash) - line_start):
+            continue
         hits.append((" ".join(line.split()), dash))
     return hits
 
