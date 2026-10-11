@@ -15,6 +15,14 @@ per-file diff commands.
 
 ### Fixed
 
+- **`verify_pdf.py --ascii-dates` no longer reads a numeric range with year-shaped ends as a
+  date** - #512 bounded the year to four standalone digits, but `EUR 1500–2000 per month` and
+  `2000–5000 requests per second` still failed `/apply` Step 5d: each has a four-digit number
+  next to the dash that happens to fall in 1900-2099. A range whose two ends are both plain
+  numbers now counts as a date only when both are years, so the salary band and the
+  throughput range are quantities and pass, while `2016–2024`, `1990–2010` and `2016 – Present`
+  still fail as before. Two new `test_verify_pdf.py` cases; the quantity one fails on master.
+
 - **`/reset profile` now targets the headings the shipped skill files actually have**
   (`.claude/commands/reset.md` Step 3, `tests/test_reset_command.py`) - two of its Step 3
   targets had drifted. The `05-cv-templates.md` step anchored on a section beginning
