@@ -46,6 +46,11 @@ per-file diff commands.
 
 ### Fixed
 
+- **Upstream triage emits cherry-pick suggestions in dependency order**
+  (`tools/upstream_triage.py`) - ready-to-run commands now list ancestors before
+  descendants, so a follow-up patch is not suggested before the change it edits.
+  The report tables remain newest first; the tool still executes no Git mutations.
+
 - **`jobnet-search` routes external ads to employer `jobAdUrl` rather than broken `find-job` links**
   (#538, `.agents/skills/jobnet-search/cli/src/commands/search.ts`, `.agents/skills/jobnet-search/cli/README.md`,
   `.agents/skills/jobnet-search/cli/tests/search-normalization.test.ts`) - external job postings on
