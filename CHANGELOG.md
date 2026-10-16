@@ -46,6 +46,21 @@ per-file diff commands.
 
 ### Fixed
 
+- **`05-cv-templates.md` snippets write the `\cventry` date argument with an ASCII hyphen, as the same
+  file's own rule requires** (`.claude/skills/job-application-assistant/05-cv-templates.md`,
+  `framework_version: 1.4.6 -> 1.4.7`) - the in-progress-qualification snippet under "In-progress
+  qualifications must say so explicitly" wrote `\cventry{2025--2026}`, the `\needspace` snippet
+  under the orphaned-entry fix wrote `\cventry{YEAR--YEAR}`, and the in-progress section offered a date field
+  of `2025–present` (U+2013) as an accepted alternative. All three are values copied straight into a
+  CV, so an assistant following the file produced exactly the en-dash that **Date fields must be ASCII
+  ranges** forbids 130 lines further down, and that `/apply` Step 5d then rejects: inserting the
+  in-progress snippet as shipped into `cv/main_example.tex` and compiling with `lualatex` makes
+  `python tools/verify_pdf.py cv/main_example.pdf --pages 2 --ascii-dates` exit 1 with
+  `U+2013 in '... 2025–2026'`, where the unmodified template passes. #276 fixed the template's own
+  date fields and added the rule section, but these snippets predate it (#210) and were missed. The
+  deliberate negative example (`% en-dash, may not`) and the illustrations of the forms `--ascii-dates`
+  catches are left as they are.
+
 - **`jobnet-search` routes external ads to employer `jobAdUrl` rather than broken `find-job` links**
   (#538, `.agents/skills/jobnet-search/cli/src/commands/search.ts`, `.agents/skills/jobnet-search/cli/README.md`,
   `.agents/skills/jobnet-search/cli/tests/search-normalization.test.ts`) - external job postings on
